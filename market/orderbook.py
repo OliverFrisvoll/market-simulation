@@ -28,6 +28,13 @@ class Bid:
             return None
         return self.orders.reset_index().loc[:, ['price', 'quantity']].head(n)
 
+    def fetch_order(self, identifier, id_type: str = 'idd'):
+        if id_type in ['idd', 'order_id']:
+            orders = self.orders.loc[self.orders[id_type].isin(identifier)]
+            if orders.empty:
+                return None
+        return None
+
     def top(self):
         if self.orders.empty:
             return None
@@ -67,12 +74,12 @@ class OrderBook:
     def __init__(self):
         self._bid: Bid = Bid()
         self._ask: Ask = Ask()
-        self._idd = uuid.uuid4()
+        self._ob_id = uuid.uuid4()
         self._transactions = TransactionLogg()
 
     @property
-    def order_book_id(self):
-        return self._idd
+    def ob_id(self):
+        return self._ob_id
 
     def transaction(self, bid_id, ask_id, price, quantity):
         transaction_id = uuid.uuid4()
@@ -87,7 +94,6 @@ class OrderBook:
             top = self._ask.top()
             if top is not None and top['price'] <= bid:
                 net = top['quantity'] - quantity
-                print(net)
                 if net < 0:
                     transaction_ids.append(self.transaction(user_id, top['idd'], top['price'], top['quantity']))
                     self.delete_ask(top.name)
@@ -137,10 +143,9 @@ class OrderBook:
         self._ask.delete(order_id)
 
     def mid_price(self):
-        try:
-            return (self._bid.top()['price'] + self._ask.top()['price']) / 2
-        except IndexError:
+        if self._bid.orders.empty or self._ask.orders.empty:
             return 0
+        return (self._bid.top()['price'] + self._ask.top()['price']) / 2
 
     def show_bid(self, n: int = 5):
         return self._bid.peek(n)
@@ -150,6 +155,8 @@ class OrderBook:
 
     def show(self, n: int = 5):
         mid = pd.DataFrame([[self.mid_price(), "---"]], columns=['price', 'BID/ASK'])
+        if self.show_ask() is None or self.show_bid() is None:
+            return mid
         ask = self.show_ask(5).iloc[::-1]
         ask['BID/ASK'] = 'ASK'
         bid = self.show_bid(5)
@@ -159,5 +166,8 @@ class OrderBook:
     def show_transactions(self, identifier, id_type: str = 'transaction_id'):
         return self._transactions.fetch_transaction(identifier, id_type)
 
+    def show_orders(self, identifier, id_type: str = 'order_id') -> tuple:
+        return self._bid.fetch_order(identifier, id_type), self._ask.fetch_order(identifier, id_type)
+
     def __eq__(self, other):
-        return self.idd == other.idd
+        return self.ob_id == other.ob_id
