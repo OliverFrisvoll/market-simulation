@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 pandas = "*"
 coverage = "*"
+sympy = "*"
+scipy = "*"
 
 [dev-packages]
 
