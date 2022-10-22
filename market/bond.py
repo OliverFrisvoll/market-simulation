@@ -50,7 +50,7 @@ class Bond(Asset):
         from scipy import optimize
 
         coupon = (cr / coupon_frequency) * par_value
-        if (years := (maturity - datetime.datetime.now()).days / 365) < 0:
+        if (years := (maturity - datetime.now()).days / 365) < 0:
             raise ValueError("Maturity date must be in the future")
 
         T = np.floor(years * coupon_frequency)
