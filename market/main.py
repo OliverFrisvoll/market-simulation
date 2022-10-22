@@ -1,22 +1,16 @@
-from orderbook import OrderBook
+from scipy import optimize
+import numpy as np
 
-ob = OrderBook()
+c = 40
+T = 4.3
+n = np.floor(T)
+t = T - n
+p = 500
+par = 1000
 
-ob.add_bid(1, 23, 100)
-ob.add_bid(2, 24, 30)
-ob.add_bid(3, 10, 20)
+get_yield = lambda r: (c / r) - (c / r * np.power((1 + r), n)) + (c + par) / np.power((1 + r), n) - p
 
-ob.add_ask(5, 25, 10)
-ob.add_ask(4, 28, 30)
-ob.add_ask(8, 30, 50)
 
-print(ob.show())
+print(optimize.newton(get_yield, 0.05))
 
-trans_id, order_id = ob.add_bid(9, 30, 30)
-
-print(ob.show())
-
-trans = ob.show_transactions(trans_id)
-trans['value'] = trans['price'] * trans['amount']
-
-print(trans.loc[:, ['user_id', 'value']].groupby('user_id').sum())
+print(t)

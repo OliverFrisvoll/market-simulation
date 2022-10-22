@@ -1,3 +1,5 @@
+import numpy as np
+
 from datetime import datetime
 
 from securities import Asset
@@ -34,5 +36,14 @@ class Bond(Asset):
 
     def yield_to_maturity(self):
         price = self.price()
-        if price == 0:
+        TRADING_DAYS_PER_YEAR = 252
+        if price is None:
             return 0
+
+        # TODO: FIX PROPER CALCULATION, THIS IS A PLACEHOLDER.
+        #  NEED TO DISCOUNT ALL THE BACK TO TODAY AND THEN CALCULATE YTM FROM THERE
+        #  ALSO NEED TO ACCOUNT FOR COUPON PAYMENT DATES
+        time_to_maturity = (self.maturity - datetime.now()).days / TRADING_DAYS_PER_YEAR
+        coupon = self._coupon_rate * self._par_value / self._coupon_frequency
+
+        cash_flow: list = [coupon] * (self._coupon_frequency * (self._maturity.year - datetime.now().year))
