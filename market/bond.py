@@ -34,16 +34,37 @@ class Bond(Asset):
     def issuer_id(self):
         return self._issuer_id
 
-    def yield_to_maturity(self):
-        price = self.price()
-        TRADING_DAYS_PER_YEAR = 252
-        if price is None:
-            return 0
+    @staticmethod
+    def _calculate_ytm(maturity: datetime, price: float, cr: float, par_value: int = 1000, coupon_frequency: int = 1):
+        """
+        Calculates the yield to maturity of a bond given the maturity date, price, coupon rate, par value and coupon frequency.
 
-        # TODO: FIX PROPER CALCULATION, THIS IS A PLACEHOLDER.
-        #  NEED TO DISCOUNT ALL THE BACK TO TODAY AND THEN CALCULATE YTM FROM THERE
-        #  ALSO NEED TO ACCOUNT FOR COUPON PAYMENT DATES
-        time_to_maturity = (self.maturity - datetime.now()).days / TRADING_DAYS_PER_YEAR
-        coupon = self._coupon_rate * self._par_value / self._coupon_frequency
+        :param maturity: datetime - date of maturity
+        :param price: float - Price of the bond
+        :param cr: float - Coupon rate
+        :param par_value: int - Par value of the bond
+        :param coupon_frequency: int - Coupon frequency
+        :return: float - Yield to maturity
+        """
 
-        cash_flow: list = [coupon] * (self._coupon_frequency * (self._maturity.year - datetime.now().year))
+        from scipy import optimize
+
+        coupon = (cr / coupon_frequency) * par_value
+        if (years := (maturity - datetime.datetime.now()).days / 365) < 0:
+            raise ValueError("Maturity date must be in the future")
+
+        T = np.floor(years * coupon_frequency)
+        t = years * coupon_frequency - T
+
+        def f(r):
+            return coupon / np.power(1 + r, t) + \
+                   (coupon / r - coupon / (r * np.power(1 + r, T))) / np.power(1 + r, t) + \
+                   par_value / np.power(1 + r, T + t) - \
+                   price
+
+        return optimize.newton(f, 0.01)
+
+    def ytm(self):
+        if self.price() is None:
+            return None
+        return self._calculate_ytm(self.maturity, self.price(), self.coupon_rate, self.par_value, self.coupon_frequency)
