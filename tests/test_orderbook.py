@@ -4,7 +4,7 @@ from datetime import datetime
 from orderbook import OrderBook
 
 
-class TestBond(unittest.TestCase):
+class TestOrderbook(unittest.TestCase):
 
     def test_add_bid(self):
         ob = OrderBook()
