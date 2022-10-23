@@ -52,7 +52,11 @@ class Debt:
 class Credit:
     limit: int
     credit_used: int
-    interest_rate: float
+    # Add an interest rate implementation
+    interest_rate: float = None
+
+    def owed_credit(self):
+        return self.credit_used
 
     def available_credit(self):
         return self.limit - self.credit_used
@@ -71,31 +75,66 @@ class Credit:
             return True, self.available_credit()
 
 
-@dataclass
 class Account:
-    account_name: str
-    _account_id: uuid.uuid4
-    _balance: float
-    _credit: Credit
-
-    @property
-    def account_id(self):
-        return self._account_id
+    def __init__(self, account_name: str, balance: float, credit: Credit = None):
+        self._account_name: str = account_name
+        self._account_id: uuid.uuid4 = uuid.uuid4()
+        self._balance: float = balance
+        self._credit: Credit = credit
 
     @property
     def balance(self):
         return self._balance
 
-    def withdraw(self, amount):
-        if self._balance - amount < 0:
-            if self._credit.credit_used - amount < 0:
-                pass
+    @balance.setter
+    def balance(self, amount):
+        self._balance = amount
 
-        self._balance -= amount
-        return True
+    @property
+    def account_id(self):
+        return self._account_id
+
+    def owed_credit(self):
+        if self._credit:
+            return self._credit.owed_credit()
+        else:
+            return 0
+
+    def available_credit(self):
+        if self._credit:
+            return self._credit.available_credit()
+        else:
+            return 0
+
+    def credit(self, amount):
+        if self._credit:
+            status, value = self._credit.credit(amount)
+            if status:
+                self.balance += self.balance + amount
+                return True, value
+            else:
+                return False, value
+
+    def withdraw(self, amount):
+        if amount > 0:
+            if self.balance - amount >= 0:
+                self.balance = self.balance - amount
+                return True, self.balance
+            elif self.available_credit() >= amount:
+                self.credit(amount)
+                self.balance = self.balance - amount
+                return True, self.balance
+            else:
+                return False, self.balance
+        else:
+            return False, self.balance
 
     def deposit(self, amount):
-        pass
+        if amount > 0:
+            self.balance = self.balance + amount
+            return True, self.balance
+        else:
+            return False, self.balance
 
 
 class AccountHolder:
@@ -110,21 +149,13 @@ class AccountHolder:
         return sum(account.balance for account in self._accounts)
 
     def add_account(self, account: Account):
-        if account.account_name in self.account_names:
-            raise ValueError("Account name already exists")
-        self._accounts[account.account_id] = account
-        self.account_names[account.account_name] = account.account_id
+        pass
 
     def add_debt(self, debt: Debt):
-        self._debt[debt.debt_id] = debt
+        pass
 
     def account_exist(self, account_id: uuid.uuid4 = None, account_name: str = None):
-        if account_id is not None:
-            return account_id in self._accounts
-        elif account_name is not None:
-            return account_name in self.account_names and self.account_names[account_name] in self._accounts
-        else:
-            return False
+        pass
 
 
 class Bank:
