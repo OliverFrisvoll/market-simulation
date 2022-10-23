@@ -76,10 +76,10 @@ class TestBond(unittest.TestCase):
 
     def test_mid_price(self):
         ob = OrderBook()
-        self.assertEqual(ob.mid_price(), 0)
+        self.assertEqual(ob.price(), 0)
         ob.add_ask(5, 25, 10)
         ob.add_bid(2, 24, 30)
-        self.assertEqual(ob.mid_price(), 24.5)
+        self.assertEqual(ob.price(), 24.5)
 
 
 if __name__ == '__main__':

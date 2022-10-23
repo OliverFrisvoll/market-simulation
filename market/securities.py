@@ -13,7 +13,7 @@ class Asset:
         return self._asset_id
 
     def price(self):
-        return self._orderbook.mid_price()
+        return self._orderbook.price()
 
     def add_order(self, user_id, price: float, quantity: int, side: str):
         side = side.lower()
@@ -32,7 +32,7 @@ class Asset:
         return self._orderbook.show(n)
 
     def show_transactions(self, transaction_id):
-        pass
+        return self._orderbook.show_transactions(transaction_id)
 
     def show_orders(self, order_id):
-        pass
+        return self._orderbook.show_orders(order_id)

@@ -6,13 +6,25 @@ from securities import Asset
 
 
 class Bond(Asset):
-    def __init__(self, par_value, maturity, coupon_rate, coupon_frequency, issuer_id):
-        self._par_value = par_value
-        self._maturity = maturity
-        self._coupon_rate = coupon_rate
-        self._coupon_frequency = coupon_frequency
+    def __init__(self, name: str, maturity: datetime, coupon_rate: float, coupon_frequency: int, issuer_id,
+                 par_value: float = 1000):
+        self._name: str = name
+        self._par_value: float = par_value
+        self._maturity: datetime = maturity
+        self._coupon_rate: float = coupon_rate
+        self._coupon_frequency: int = coupon_frequency
         self._issuer_id = issuer_id
+        if maturity < datetime.now():
+            raise ValueError('Maturity date must be in the future')
         super().__init__()
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
 
     @property
     def par_value(self):
@@ -68,3 +80,7 @@ class Bond(Asset):
         if self.price() is None:
             return None
         return self._calculate_ytm(self.maturity, self.price(), self.coupon_rate, self.par_value, self.coupon_frequency)
+
+    def __repr__(self):
+        return f'{self.asset_id} | Bond: {self._name} | Price: {self.price()} | Maturity: {self.maturity} | ' \
+               f'Coupon Rate: {self.coupon_rate} | Coupon Frequency: {self.coupon_frequency}'

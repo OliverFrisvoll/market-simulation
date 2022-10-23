@@ -6,7 +6,15 @@ import pandas as pd
 
 @dataclass
 class TransactionLogg:
-    logg: pd.DataFrame = pd.DataFrame(columns=['transaction_id', 'user_id', 'amount', 'price', 'action', 'time'])
+    _logg: pd.DataFrame = pd.DataFrame(columns=['transaction_id', 'user_id', 'amount', 'price', 'action', 'time'])
+
+    @property
+    def logg(self):
+        return self._logg
+
+    @logg.setter
+    def logg(self, value):
+        self._logg = value
 
     def transaction(self, transaction_id, user_id, amount, price, action):
         transaction = pd.DataFrame([[transaction_id, user_id, amount, price, action, time.time()]],
@@ -18,10 +26,18 @@ class TransactionLogg:
             return self.logg.loc[self.logg[id_type].isin(identifier)]
         return None
 
+    def last_transaction(self):
+        if self.logg.empty:
+            return None
+        return self.logg.iloc[-1]
+
 
 @dataclass
 class Bid:
     orders = pd.DataFrame(columns=['idd', 'timestamp', 'price', 'quantity'])
+
+    def empty(self):
+        return self.orders.empty
 
     def peek(self, n: int = 5):
         if self.orders.empty:
@@ -142,10 +158,16 @@ class OrderBook:
     def delete_ask(self, order_id):
         self._ask.delete(order_id)
 
-    def mid_price(self):
-        if self._bid.orders.empty or self._ask.orders.empty:
-            return 0
-        return (self._bid.top()['price'] + self._ask.top()['price']) / 2
+    def price(self):
+        if self._bid.empty() or self._ask.empty():
+            if self._transactions.last_transaction() is not None:
+                return self._transactions.last_transaction()['price']
+            else:
+                return 0
+        elif self._bid.empty() and not self._ask.empty():
+            return self._ask.top()['price']
+        else:
+            return (self._bid.top()['price'] + self._ask.top()['price']) / 2
 
     def show_bid(self, n: int = 5):
         return self._bid.peek(n)
@@ -154,14 +176,14 @@ class OrderBook:
         return self._ask.peek(n)
 
     def show(self, n: int = 5):
-        mid = pd.DataFrame([[self.mid_price(), "---"]], columns=['price', 'BID/ASK'])
+        price = pd.DataFrame([[self.price(), "---"]], columns=['price', 'BID/ASK'])
         if self.show_ask() is None or self.show_bid() is None:
-            return mid
+            return price
         ask = self.show_ask(5).iloc[::-1]
         ask['BID/ASK'] = 'ASK'
         bid = self.show_bid(5)
         bid['BID/ASK'] = 'BID'
-        return pd.concat([ask, mid, bid]).reset_index().loc[:, ['BID/ASK', 'price', 'quantity']]
+        return pd.concat([ask, price, bid]).reset_index().loc[:, ['BID/ASK', 'price', 'quantity']]
 
     def show_transactions(self, identifier, id_type: str = 'transaction_id'):
         return self._transactions.fetch_transaction(identifier, id_type)
@@ -171,3 +193,9 @@ class OrderBook:
 
     def __eq__(self, other):
         return self.ob_id == other.ob_id
+
+    def __hash__(self):
+        return hash(self.ob_id)
+
+    def __repr__(self):
+        return self.show()
