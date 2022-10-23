@@ -35,10 +35,6 @@ class TestDebt(unittest.TestCase):
 
 
 class TestCredit(unittest.TestCase):
-    def test_available_credit(self):
-        credit = Credit(100, 0, 0)
-        self.assertEqual(credit.available_credit(), 100, "Available credit should be 100")
-
     def test_use_credit(self):
         credit = Credit(100, 0, 0)
         self.assertEqual(credit.credit(-50), (True, 50), "Use credit should return True")
@@ -46,6 +42,11 @@ class TestCredit(unittest.TestCase):
         self.assertEqual(credit.credit(-1), (False, 0), "Use credit should return False")
         credit.credit(10)
         self.assertEqual(credit.credit(-11), (False, 10), "Use credit should return False")
+
+    def test_credit_limit(self):
+        credit = Credit(100, 0, 0)
+        self.assertEqual(credit.credit(-100), (True, 0), "Use credit should return True")
+        self.assertEqual(credit.credit(-1), (False, 0), "Use credit should return False")
 
     def test_repay_credit(self):
         credit = Credit(100, 0, 0)
@@ -55,17 +56,27 @@ class TestCredit(unittest.TestCase):
 
 class TestAccount(unittest.TestCase):
     def test_balance(self):
-        account = Account("Account_Name", 100)
-        self.assertEqual(account.balance(), 100, "Balance should be 100")
+        account = Account("name", 100)
+        self.assertEqual(account.balance, 100, "Balance should be 100")
+        self.assertEqual(account.deposit(50), (True, 150), "Deposit should return True, 150")
+        self.assertEqual(account.balance, 150, "Balance should be 150")
+        self.assertEqual(account.withdraw(50), (True, 100), "Withdraw should return True, 100")
+        self.assertEqual(account.withdraw(101), (False, 100), "Withdraw should return False, 100")
+        self.assertEqual(account.withdraw(-1), (False, 100), "Withdraw should return False, 100")
+        self.assertEqual(account.deposit(-1), (False, 100), "Deposit should return False, 100")
+        self.assertEqual(account.balance, 100, "Balance should be 100")
 
-    def test_withdraw(self):
-        account = Account(100)
-        self.assertEqual(account.withdraw(50), (True, 50), "Withdraw should return True, 50")
-        self.assertEqual(account.withdraw(50), (True, 0), "Withdraw should return True, 0")
-        self.assertEqual(account.withdraw(1), (False, 0), "Withdraw should return False, 0")
-
-    def test_deposit(self):
-        pass
+    def test_balance_with_credit(self):
+        account = Account("name", 100, Credit(100, 0, 0))
+        self.assertEqual(account.balance, 100, "Balance should be 100")
+        self.assertEqual(account.deposit(50), (True, 150), "Deposit should return True, 150")
+        self.assertEqual(account.balance, 150, "Balance should be 150")
+        self.assertEqual(account.withdraw(50), (True, 100), "Withdraw should return True, 100")
+        self.assertEqual(account.withdraw(101), (True, 0), "Withdraw should return True, 0")
+        self.assertEqual(account.withdraw(-1), (False, 0), "Withdraw should return False, 0")
+        self.assertEqual(account.deposit(-1), (False, 0), "Deposit should return False, 0")
+        self.assertEqual(account.balance, 0, "Balance should be 0")
+        self.assertEqual(account.credit_balance(), -1, "Credit balance should be -1")
 
 
 class TestAccountHolder(unittest.TestCase):

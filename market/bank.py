@@ -50,29 +50,35 @@ class Debt:
 
 @dataclass
 class Credit:
-    limit: int
-    credit_used: int
+    _limit: int
+    _balance: int = 0
     # Add an interest rate implementation
     interest_rate: float = None
 
-    def owed_credit(self):
-        return self.credit_used
+    @property
+    def limit(self):
+        return self._limit
 
-    def available_credit(self):
-        return self.limit - self.credit_used
+    @property
+    def balance(self):
+        return self._balance
+
+    @balance.setter
+    def balance(self, value):
+        self._balance = value
 
     def credit(self, amount):
         if amount > 0:
-            self.credit_used -= amount
-            return True, self.available_credit()
+            self.balance += amount
+            return True, self.limit + self.balance
         elif amount < 0:
-            if self.available_credit() >= abs(amount):
-                self.credit_used += abs(amount)
-                return True, self.available_credit()
+            if (self.limit + self.balance) >= abs(amount):
+                self.balance += amount
+                return True, self.limit + self.balance
             else:
-                return False, self.available_credit()
+                return False, self.limit + self.balance
         else:
-            return True, self.available_credit()
+            return True, self.limit + self.balance
 
 
 class Account:
@@ -94,35 +100,30 @@ class Account:
     def account_id(self):
         return self._account_id
 
-    def owed_credit(self):
+    def credit_balance(self):
         if self._credit:
-            return self._credit.owed_credit()
+            return self._credit.balance
         else:
             return 0
 
     def available_credit(self):
         if self._credit:
-            return self._credit.available_credit()
+            return self._credit.limit + self._credit.balance
         else:
             return 0
 
     def credit(self, amount):
         if self._credit:
-            status, value = self._credit.credit(amount)
-            if status:
-                self.balance += self.balance + amount
-                return True, value
-            else:
-                return False, value
+            return self._credit.credit(amount)
 
     def withdraw(self, amount):
         if amount > 0:
             if self.balance - amount >= 0:
                 self.balance = self.balance - amount
                 return True, self.balance
-            elif self.available_credit() >= amount:
-                self.credit(amount)
-                self.balance = self.balance - amount
+            elif self.available_credit() >= abs(rest := self.balance - amount):
+                self.balance = 0
+                self.credit(rest)
                 return True, self.balance
             else:
                 return False, self.balance
