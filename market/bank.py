@@ -3,6 +3,7 @@ import time
 import datetime
 import numpy as np
 from dataclasses import dataclass
+from actor import Actor
 
 
 class Debt:
@@ -94,8 +95,9 @@ class Credit:
 
 
 class Account:
-    def __init__(self, account_name: str, balance: float, credit: Credit = None):
+    def __init__(self, account_name: str, balance: float, actor_id: uuid.uuid4, credit: Credit = None):
         self._account_name: str = account_name
+        self._actor_id: uuid.uuid4 = actor_id
         self._account_id: uuid.uuid4 = uuid.uuid4()
         self._balance: float = balance
         self._credit: Credit = credit
@@ -165,6 +167,9 @@ class Account:
             return True, self.balance
         else:
             return False, self.balance
+
+    def transfer(self, amount, account):
+        pass
 
 
 class AccountHolder:
@@ -296,12 +301,24 @@ class Bank:
     def __init__(self):
         self.bank_id = uuid.uuid4()
 
+    def __eq__(self, other):
+        return self.bank_id == other.bank_id
+
 
 class PrivateBank(Bank):
-    def __init__(self):
+    def __init__(self, name):
         super().__init__()
-        self._issued_debt: dict
-        self._accounts: dict
+        self.name = name
+        self._issued_debt: dict = {}
+        self._accounts: dict = {}
+        self._customers: dict = {}
+        self._base_credit = Credit(1000, 0)
 
-    def create_account(self, actor_id: uuid.uuid4, account_name: str, balance: float):
-        pass
+    def create_account(self, actor: Actor, account_name: str, balance: float, credit: Credit = None):
+        if not credit:
+            credit = self._base_credit
+        if actor.actor_id not in self._customers:
+            self._customers[actor.actor_id] = actor
+        account = Account(account_name, balance, actor.actor_id, credit)
+        self._accounts[actor.actor_id] = account
+        return account
